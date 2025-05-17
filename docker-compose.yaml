@@ -1,0 +1,16 @@
+services:
+  app:
+    image: snmp-olt-zte:latest
+    container_name: snmp-olt-zte
+    environment:
+      - REDIS_HOST=127.0.0.1
+      - REDIS_PORT=6379
+      - REDIS_DB=0
+      - REDIS_MIN_IDLE_CONNECTIONS=200
+      - REDIS_POOL_SIZE=12000
+      - REDIS_POOL_TIMEOUT=240
+      - SNMP_HOST=136.1.1.100
+      - SNMP_PORT=161
+      - SNMP_COMMUNITY=public
+    ports:
+      - "8081:8081"
