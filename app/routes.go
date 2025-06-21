@@ -42,6 +42,12 @@ func loadRoutes(onuHandler *handler.OnuHandler) http.Handler {
 		r.Get("/{board_id}/pon/{pon_id}/onu_id/update", onuHandler.UpdateEmptyOnuID)
 	})
 
+	// Define routes for /api/v1/onu
+	apiV1Group.Route("/onu", func(r chi.Router) {
+		r.Get("/unactivated", onuHandler.GetUnactivatedONU)
+		r.Post("/register", onuHandler.ActivateONU)
+	})
+
 	// Define routes for /api/v1/paginate
 	apiV1Group.Route("/paginate", func(r chi.Router) {
 		r.Get("/board/{board_id}/pon/{pon_id}", onuHandler.GetByBoardIDAndPonIDWithPaginate)

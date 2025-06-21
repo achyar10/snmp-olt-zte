@@ -1,10 +1,14 @@
 package handler
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
+	"time"
 
+	"github.com/achyar10/snmp-olt-zte/internal/model"
 	"github.com/achyar10/snmp-olt-zte/internal/usecase"
 	"github.com/achyar10/snmp-olt-zte/internal/utils"
 	"github.com/achyar10/snmp-olt-zte/pkg/pagination"
@@ -19,6 +23,8 @@ type OnuHandlerInterface interface {
 	GetOnuIDAndSerialNumber(w http.ResponseWriter, r *http.Request)
 	UpdateEmptyOnuID(w http.ResponseWriter, r *http.Request)
 	GetByBoardIDAndPonIDWithPaginate(w http.ResponseWriter, r *http.Request)
+	ActivateONU(w http.ResponseWriter, r *http.Request)
+	GetUnactivatedONU(w http.ResponseWriter, r *http.Request)
 }
 
 type OnuHandler struct {
@@ -359,4 +365,114 @@ func (o *OnuHandler) GetByBoardIDAndPonIDWithPaginate(w http.ResponseWriter, r *
 	}
 
 	utils.SendJSONResponse(w, http.StatusOK, responsePagination) // 200
+}
+
+func (o *OnuHandler) ActivateONU(w http.ResponseWriter, r *http.Request) {
+	var payload model.ActivateONURequest
+
+	// Decode body
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		log.Error().Err(err).Msg("Invalid JSON payload")
+		utils.ErrorBadRequest(w, fmt.Errorf("invalid request payload"))
+		return
+	}
+
+	// Validate required fields
+	if payload.OLTIndex == "" || payload.SerialNumber == "" || payload.Region == "" || payload.Code == "" {
+		log.Error().Msg("Missing required fields in payload")
+		utils.ErrorBadRequest(w, fmt.Errorf("missing required fields"))
+		return
+	}
+
+	slot, port, err := utils.ParseOltIndex(payload.OLTIndex)
+	if err != nil {
+		log.Error().Err(err).Msg("Invalid OLTIndex format")
+		utils.ErrorBadRequest(w, fmt.Errorf("invalid olt_index format"))
+		return
+	}
+
+	// Get ONU ID: dari payload atau dari fungsi available
+	var onuID int
+	if payload.Onu != nil {
+		onuID = *payload.Onu
+	} else {
+		available, err := utils.GetAvailableONUOnly(payload.OLTIndex, 128)
+		if err != nil || len(available) == 0 {
+			log.Error().Err(err).Msg("No available ONU found")
+			utils.ErrorInternalServerError(w, fmt.Errorf("no available ONU found"))
+			return
+		}
+		onuID = available[0].ID
+	}
+
+	// Build command
+	cmd := utils.BuildZTERegisterCommand(slot, port, payload.Region, payload.SerialNumber, payload.Code, onuID)
+
+	// Run telnet command
+	resp, err := utils.RunTelnetCommand(cmd)
+	if err != nil {
+		log.Error().Err(err).Msg("Activation failed via Telnet")
+		utils.ErrorInternalServerError(w, fmt.Errorf("activation failed"))
+		return
+	}
+
+	// Detect re-registration / duplicate
+	isAlreadyExists := strings.Contains(resp, "entry is existed") ||
+		strings.Contains(resp, "already exists") ||
+		strings.Contains(resp, "The service is already existed")
+
+	if isAlreadyExists {
+		log.Warn().Msg("ONU already registered")
+		utils.SendJSONResponse(w, http.StatusConflict, utils.WebResponse{
+			Code:   http.StatusConflict,
+			Status: "already_registered",
+			Data: map[string]interface{}{
+				"used_onu":       onuID,
+				"olt_index":      payload.OLTIndex,
+				"serial_number":  payload.SerialNumber,
+				"command_output": resp,
+			},
+		})
+		return
+	}
+
+	// Return success response
+	response := utils.WebResponse{
+		Code:   http.StatusOK,
+		Status: "OK",
+		Data: map[string]interface{}{
+			"status":         "success",
+			"used_onu":       onuID,
+			"olt_index":      payload.OLTIndex,
+			"serial_number":  payload.SerialNumber,
+			"command_output": resp,
+		},
+	}
+
+	utils.SendJSONResponse(w, http.StatusOK, response)
+}
+
+func (o *OnuHandler) GetUnactivatedONU(w http.ResponseWriter, r *http.Request) {
+	start := time.Now()
+
+	output, err := utils.RunTelnetCommand("show pon onu u")
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to execute Telnet command")
+		utils.ErrorInternalServerError(w, fmt.Errorf("failed to execute telnet command: %v", err))
+		return
+	}
+
+	onuItems := utils.ParseONULineOutput(output)
+	duration := time.Since(start).Seconds()
+
+	response := utils.WebResponse{
+		Code:   http.StatusOK,
+		Status: "OK",
+		Data: map[string]interface{}{
+			"duration":     fmt.Sprintf("%.2fs", duration),
+			"detected_onu": onuItems,
+		},
+	}
+
+	utils.SendJSONResponse(w, http.StatusOK, response)
 }

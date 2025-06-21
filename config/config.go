@@ -8,6 +8,7 @@ import (
 
 type Config struct {
 	SnmpCfg     SnmpConfig
+	TelnetCfg   TelnetConfig
 	RedisCfg    RedisConfig
 	OltCfg      OltConfig
 	Board1Pon1  Board1Pon1
@@ -48,6 +49,13 @@ type SnmpConfig struct {
 	Ip        string `mapstructure:"ip"`
 	Port      uint16 `mapstructure:"port"`
 	Community string `mapstructure:"community"`
+}
+
+type TelnetConfig struct {
+	Ip       string `mapstructure:"ip"`
+	Port     uint16 `mapstructure:"port"`
+	Username string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
 }
 
 type RedisConfig struct {

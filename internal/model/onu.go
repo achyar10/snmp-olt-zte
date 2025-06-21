@@ -80,3 +80,33 @@ type PaginationResult struct {
 	OnuInformationList []ONUInfoPerBoard
 	Count              int
 }
+
+type TelnetRequest struct {
+	Host     string `json:"host"`
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+type ONUItem struct {
+	OltIndex     string `json:"olt_index"`
+	Model        string `json:"model"`
+	SerialNumber string `json:"serial_number"`
+	Status       string `json:"status"`
+}
+
+type ONUStatus struct {
+	ID         int    `json:"id"`
+	Status     string `json:"status"`
+	AdminState string `json:"admin_state,omitempty"`
+	OMCCState  string `json:"omcc_state,omitempty"`
+	PhaseState string `json:"phase_state,omitempty"`
+	Channel    string `json:"channel,omitempty"`
+}
+
+type ActivateONURequest struct {
+	OLTIndex     string `json:"olt_index"`
+	SerialNumber string `json:"serial_number"`
+	Region       string `json:"region"`
+	Code         string `json:"code"`
+	Onu          *int   `json:"onu,omitempty"` // pointer to know if it’s provided or not
+}
