@@ -1,4 +1,4 @@
-FROM golang:1.23-alpine AS dev
+FROM golang:1.24-alpine AS dev
 RUN go install github.com/air-verse/air@latest
 WORKDIR /app
 COPY . /app/
