@@ -64,7 +64,7 @@ func RunTelnetCommand(command string) (string, error) {
 		log.Fatalf("Error loading config: %v", err)
 	}
 
-	address := fmt.Sprintf("%s:23", cfg.TelnetCfg.Ip)
+	address := formatAddress(cfg.TelnetCfg.Ip, cfg.TelnetCfg.Port)
 	conn, err := net.DialTimeout("tcp", address, 5*time.Second)
 	if err != nil {
 		return "", fmt.Errorf("failed to connect: %w", err)
@@ -106,4 +106,11 @@ func RunTelnetCommand(command string) (string, error) {
 	}
 
 	return result.String(), nil
+}
+
+func formatAddress(ip string, port uint16) string {
+	if strings.Contains(ip, ":") && !strings.HasPrefix(ip, "[") {
+		return fmt.Sprintf("[%s]:%d", ip, port) // IPv6 safe
+	}
+	return fmt.Sprintf("%s:%d", ip, port) // IPv4
 }
