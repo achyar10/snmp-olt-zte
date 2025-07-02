@@ -108,5 +108,6 @@ type ActivateONURequest struct {
 	SerialNumber string `json:"serial_number"`
 	Region       string `json:"region"`
 	Code         string `json:"code"`
+	VlanID       int    `json:"vlan_id,omitempty"`
 	Onu          *int   `json:"onu,omitempty"` // pointer to know if it’s provided or not
 }

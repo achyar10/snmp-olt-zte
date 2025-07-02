@@ -406,7 +406,7 @@ func (o *OnuHandler) ActivateONU(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Build command
-	cmd := utils.BuildZTERegisterCommand(slot, port, payload.Region, payload.SerialNumber, payload.Code, onuID)
+	cmd := utils.BuildZTERegisterCommand(slot, port, payload.Region, payload.SerialNumber, payload.Code, onuID, payload.VlanID)
 
 	// Run telnet command
 	resp, err := utils.RunTelnetCommand(cmd)

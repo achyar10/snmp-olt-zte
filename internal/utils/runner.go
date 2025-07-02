@@ -61,10 +61,12 @@ func RunTelnetCommand(command string) (string, error) {
 	configPath := GetConfigPath(os.Getenv("APP_ENV"))
 	cfg, err := config.LoadConfig(configPath)
 	if err != nil {
-		log.Fatalf("Error loading config: %v", err)
+		return "", fmt.Errorf("error loading config: %w", err)
 	}
 
 	address := formatAddress(cfg.TelnetCfg.Ip, cfg.TelnetCfg.Port)
+	log.Println("🔌 Connecting to", address)
+
 	conn, err := net.DialTimeout("tcp", address, 5*time.Second)
 	if err != nil {
 		return "", fmt.Errorf("failed to connect: %w", err)
@@ -75,34 +77,61 @@ func RunTelnetCommand(command string) (string, error) {
 	reader := bufio.NewReader(conn)
 	writer := bufio.NewWriter(conn)
 
+	// Baca banner awal
 	readAndLogRaw(conn, "initial-banner", 5*time.Second)
 
-	writer.WriteString(cfg.TelnetCfg.Username + "\n")
-	writer.Flush()
-	time.Sleep(1 * time.Second)
+	// Login
+	if err := writeAndLog(writer, cfg.TelnetCfg.Username); err != nil {
+		return "", err
+	}
+	time.Sleep(300 * time.Millisecond)
 
-	writer.WriteString(cfg.TelnetCfg.Password + "\n")
-	writer.Flush()
-	time.Sleep(1 * time.Second)
+	if err := writeAndLog(writer, cfg.TelnetCfg.Password); err != nil {
+		return "", err
+	}
+	time.Sleep(500 * time.Millisecond)
 
-	writer.WriteString("\n")
-	writer.Flush()
+	if err := writeAndLog(writer, ""); err != nil {
+		return "", err
+	}
 
+	// Tunggu prompt
 	if err := readUntil(conn, "GPON-D1-JKT-PSR#", 8*time.Second, "wait-prompt"); err != nil {
 		return "", fmt.Errorf("login failed: %w", err)
 	}
 
-	writer.WriteString(command + "\n")
-	writer.Flush()
-
-	conn.SetReadDeadline(time.Now().Add(3 * time.Second))
+	// Kirim perintah satu per satu
+	log.Println("🚀 Executing multiline command:")
 	var result strings.Builder
-	for {
-		line, err := reader.ReadString('\n')
-		if err != nil {
-			break
+
+	for _, line := range strings.Split(command, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
 		}
-		result.WriteString(decodeGBK(line))
+		log.Printf("📤 Sending: %s", line)
+		if _, err := writer.WriteString(line + "\n"); err != nil {
+			return "", fmt.Errorf("failed to write command: %w", err)
+		}
+		if err := writer.Flush(); err != nil {
+			return "", fmt.Errorf("flush failed: %w", err)
+		}
+
+		// Set timeout untuk setiap respon
+		conn.SetReadDeadline(time.Now().Add(3 * time.Second))
+
+		// Baca respons baris demi baris
+		for {
+			respLine, err := reader.ReadString('\n')
+			if err != nil {
+				break // lanjut ke command berikutnya
+			}
+			decoded := decodeGBK(respLine)
+			result.WriteString(decoded)
+			log.Printf("📥 Output: %s", strings.TrimSpace(decoded))
+		}
+
+		time.Sleep(150 * time.Millisecond)
 	}
 
 	return result.String(), nil
@@ -113,4 +142,13 @@ func formatAddress(ip string, port uint16) string {
 		return fmt.Sprintf("[%s]:%d", ip, port) // IPv6 safe
 	}
 	return fmt.Sprintf("%s:%d", ip, port) // IPv4
+}
+
+func writeAndLog(writer *bufio.Writer, cmd string) error {
+	log.Printf("📤 Sending: %s", strings.TrimSpace(cmd))
+	_, err := writer.WriteString(cmd + "\n")
+	if err != nil {
+		return fmt.Errorf("failed to write: %w", err)
+	}
+	return writer.Flush()
 }

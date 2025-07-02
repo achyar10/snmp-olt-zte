@@ -78,7 +78,7 @@ func ParseOltIndex(index string) (int, int, error) {
 	return slot, port, nil
 }
 
-func BuildZTERegisterCommand(slot, port int, region, serialNumber, code string, onu int) string {
+func BuildZTERegisterCommand(slot, port int, region, serialNumber, code string, onu, vlanID int) string {
 	return fmt.Sprintf(
 		`con t
 interface gpon-olt_1/%d/%d
@@ -89,14 +89,14 @@ name %s
 description zone %s
 tcont 3 profile 1G
 gemport 1 tcont 3
-service-port 1 vport 1 user-vlan 800 vlan 800
+service-port 1 vport 1 user-vlan %d vlan %d
 service-port 2 vport 1 user-vlan 100 vlan 100
 exit
 
 pon-onu-mng gpon-onu_1/%d/%d:%d
-service 1 gemport 1 vlan 800
+service 1 gemport 1 vlan %d
 service TR069 gemport 1 vlan 100
-wan-ip 1 mode pppoe username %s password 101094 vlan-profile 800 host 1
+wan-ip 1 mode pppoe username %s password 101094 vlan-profile %d host 1
 wan-ip 2 mode dhcp vlan-profile 100 host 2
 tr069-mgmt 1 acs http://10.0.0.3:7547
 security-mgmt 212 state enable mode forward protocol web
@@ -107,7 +107,9 @@ wr`,
 		onu, serialNumber,
 		slot, port, onu,
 		code, region,
+		vlanID, vlanID,
 		slot, port, onu,
-		code,
+		vlanID,
+		code, vlanID,
 	)
 }
