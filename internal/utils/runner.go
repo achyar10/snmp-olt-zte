@@ -129,6 +129,13 @@ func RunTelnetCommand(command string) (string, error) {
 			decoded := decodeGBK(respLine)
 			result.WriteString(decoded)
 			// log.Printf("📥 Output: %s", strings.TrimSpace(decoded))
+
+			// ✅ Cek apakah prompt konfirmasi muncul
+			if strings.Contains(decoded, "Confirm to reboot?") {
+				log.Println("🟡 Detected confirmation prompt, replying with 'yes'")
+				writer.WriteString("yes\n")
+				writer.Flush()
+			}
 		}
 
 		// time.Sleep(150 * time.Millisecond)
