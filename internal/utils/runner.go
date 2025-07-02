@@ -128,10 +128,10 @@ func RunTelnetCommand(command string) (string, error) {
 			}
 			decoded := decodeGBK(respLine)
 			result.WriteString(decoded)
-			log.Printf("📥 Output: %s", strings.TrimSpace(decoded))
+			// log.Printf("📥 Output: %s", strings.TrimSpace(decoded))
 		}
 
-		time.Sleep(150 * time.Millisecond)
+		// time.Sleep(150 * time.Millisecond)
 	}
 
 	return result.String(), nil

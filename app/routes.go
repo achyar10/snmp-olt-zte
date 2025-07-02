@@ -46,6 +46,7 @@ func loadRoutes(onuHandler *handler.OnuHandler) http.Handler {
 	apiV1Group.Route("/onu", func(r chi.Router) {
 		r.Get("/unactivated", onuHandler.GetUnactivatedONU)
 		r.Post("/register", onuHandler.ActivateONU)
+		r.Post("/reboot", onuHandler.RebootONU)
 	})
 
 	// Define routes for /api/v1/paginate

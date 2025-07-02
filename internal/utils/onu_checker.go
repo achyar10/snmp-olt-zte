@@ -113,3 +113,13 @@ wr`,
 		code, vlanID,
 	)
 }
+
+func BuildZTERebootCommand(slot, port, onu int) string {
+	return fmt.Sprintf(
+		`config terminal
+pon-onu
+pon-onu-mng gpon-onu_1/%d/%d:%d
+reboot`,
+		slot, port, onu,
+	)
+}

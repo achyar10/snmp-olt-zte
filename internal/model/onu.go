@@ -111,3 +111,8 @@ type ActivateONURequest struct {
 	VlanID       int    `json:"vlan_id,omitempty"`
 	Onu          *int   `json:"onu,omitempty"` // pointer to know if it’s provided or not
 }
+
+type RebootONURequest struct {
+	OLTIndex string `json:"olt_index"`
+	Onu      *int   `json:"onu"`
+}
