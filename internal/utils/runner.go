@@ -88,7 +88,7 @@ func RunTelnetCommand(command string) (string, error) {
 	writer.WriteString("\n")
 	writer.Flush()
 
-	if err := readUntil(conn, "ZXAN#", 8*time.Second, "wait-prompt"); err != nil {
+	if err := readUntil(conn, "GPON-D1-JKT-PSR#", 8*time.Second, "wait-prompt"); err != nil {
 		return "", fmt.Errorf("login failed: %w", err)
 	}
 
