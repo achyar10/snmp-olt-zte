@@ -12,8 +12,8 @@ services:
       - REDIS_MIN_IDLE_CONNECTIONS=200
       - REDIS_POOL_SIZE=12000
       - REDIS_POOL_TIMEOUT=240
-      - SNMP_HOST=136.1.1.100
-      - SNMP_PORT=161
+      - SNMP_HOST=38.253.252.1
+      - SNMP_PORT=45
       - SNMP_COMMUNITY=public
     ports:
       - "8081:8081"
