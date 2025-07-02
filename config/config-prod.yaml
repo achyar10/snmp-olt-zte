@@ -4,15 +4,15 @@ ServerCfg:
   mode: "development"
 
 SnmpCfg:
-  ip: "136.1.1.100"
+  ip: "10.99.99.2"
   port: "161"
   community: "public"
 
 TelnetCfg:
-  ip: "136.1.1.100"
+  ip: "10.99.99.2"
   port: "23"
-  username: "aba"
-  password : "@aba1010#"
+  username: "jhon"
+  password : "102017"
 
 RedisCfg:
   host: "localhost"
