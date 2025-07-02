@@ -4,13 +4,13 @@ ServerCfg:
   mode : "development"
 
 SnmpCfg:
-  ip : "10.99.99.2"
-  port : "161"
+  ip : "38.253.252.1"
+  port : "45"
   community : "public"
 
 TelnetCfg:
-  ip : "10.99.99.2"
-  port : "23"
+  ip : "38.253.252.1"
+  port : "44"
   username : "jhon"
   password : "102017"
 
