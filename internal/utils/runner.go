@@ -77,7 +77,6 @@ func RunTelnetCommand(command string) (string, error) {
 	reader := bufio.NewReader(conn)
 	writer := bufio.NewWriter(conn)
 
-	// Baca banner awal
 	readAndLogRaw(conn, "initial-banner", 5*time.Second)
 
 	// Login
@@ -95,46 +94,66 @@ func RunTelnetCommand(command string) (string, error) {
 		return "", err
 	}
 
-	// Tunggu prompt
 	if err := readUntil(conn, "GPON-D1-JKT-PSR#", 8*time.Second, "wait-prompt"); err != nil {
 		return "", fmt.Errorf("login failed: %w", err)
 	}
 
-	// Kirim perintah satu per satu
-	log.Println("🚀 Executing multiline command:")
 	var result strings.Builder
+	var awaitingConfirmation bool
 
+	// Eksekusi command baris per baris
 	for _, line := range strings.Split(command, "\n") {
 		line = strings.TrimSpace(line)
 		if line == "" {
 			continue
 		}
+
 		log.Printf("📤 Sending: %s", line)
 		if _, err := writer.WriteString(line + "\n"); err != nil {
-			return "", fmt.Errorf("failed to write command: %w", err)
+			return "", fmt.Errorf("failed to send command: %w", err)
 		}
 		if err := writer.Flush(); err != nil {
 			return "", fmt.Errorf("flush failed: %w", err)
 		}
 
-		// Set timeout untuk setiap respon
-		conn.SetReadDeadline(time.Now().Add(3 * time.Second))
+		conn.SetReadDeadline(time.Now().Add(5 * time.Second))
+		buf := make([]byte, 1)
+		var bufferLine string
 
-		// Baca respons baris demi baris
 		for {
-			respLine, err := reader.ReadString('\n')
-			if err != nil {
-				break // lanjut ke command berikutnya
+			n, err := reader.Read(buf)
+			if err != nil || n == 0 {
+				break
 			}
-			decoded := decodeGBK(respLine)
-			result.WriteString(decoded)
-			// log.Printf("📥 Output: %s", strings.TrimSpace(decoded))
 
-			// ✅ Cek apakah prompt konfirmasi muncul
-			if strings.Contains(decoded, "Confirm to reboot?") {
-				log.Println("🟡 Detected confirmation prompt, replying with 'yes'")
-				writer.WriteString("yes\n")
+			char := string(buf[0])
+			bufferLine += char
+			result.WriteString(char)
+			fmt.Print(char) // optional debug output
+
+			// Tahap 1: Deteksi awal prompt
+			if strings.Contains(bufferLine, "Confirm to reboot?") {
+				log.Println("🟡 Detected confirmation message, waiting for [yes/no]:")
+				awaitingConfirmation = true
+				bufferLine = ""
+				continue
+			}
+
+			// Tahap 2: Deteksi prompt [yes/no] dan kirim "yes"
+			if awaitingConfirmation && strings.Contains(bufferLine, "[yes/no]:") {
+				log.Println("🟡 Prompt [yes/no]: received, sending 'yes'")
+				if _, err := writer.WriteString("yes\n"); err != nil {
+					log.Println("❌ Failed to write 'yes':", err)
+				}
 				writer.Flush()
+				awaitingConfirmation = false
+				bufferLine = ""
+				continue
+			}
+
+			// Reset buffer per baris
+			if char == "\n" || char == "\r" {
+				bufferLine = ""
 			}
 		}
 
