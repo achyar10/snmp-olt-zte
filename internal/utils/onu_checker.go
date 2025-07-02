@@ -96,10 +96,10 @@ exit
 pon-onu-mng gpon-onu_1/%d/%d:%d
 service 1 gemport 1 vlan 800
 service TR069 gemport 1 vlan 100
+wan-ip 1 mode pppoe username %s password 101094 vlan-profile 800 host 1
 wan-ip 2 mode dhcp vlan-profile 100 host 2
 tr069-mgmt 1 acs http://10.0.0.3:7547
 security-mgmt 212 state enable mode forward protocol web
-wan-ip 1 mode pppoe username %s password 101094 vlan-profile 800 host 1
 wan 1 ethuni 1 ssid 1 service internet host 1
 end
 wr`,
