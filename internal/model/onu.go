@@ -116,3 +116,8 @@ type RebootONURequest struct {
 	OLTIndex string `json:"olt_index"`
 	Onu      *int   `json:"onu"`
 }
+
+type RemoveONURequest struct {
+	OLTIndex string `json:"olt_index"`
+	Onu      *int   `json:"onu"`
+}

@@ -526,3 +526,53 @@ func (o *OnuHandler) RebootONU(w http.ResponseWriter, r *http.Request) {
 
 	utils.SendJSONResponse(w, http.StatusOK, response)
 }
+
+func (o *OnuHandler) RemoveONU(w http.ResponseWriter, r *http.Request) {
+	var payload model.RemoveONURequest
+
+	// Decode JSON body
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		log.Error().Err(err).Msg("Invalid JSON payload")
+		utils.ErrorBadRequest(w, fmt.Errorf("invalid request payload"))
+		return
+	}
+
+	// Validate required fields
+	if payload.OLTIndex == "" || payload.Onu == nil {
+		log.Error().Msg("Missing required fields in payload")
+		utils.ErrorBadRequest(w, fmt.Errorf("missing required fields (olt_index, onu)"))
+		return
+	}
+
+	slot, port, err := utils.ParseOltIndex(payload.OLTIndex)
+	if err != nil {
+		log.Error().Err(err).Msg("Invalid OLTIndex format")
+		utils.ErrorBadRequest(w, fmt.Errorf("invalid olt_index format"))
+		return
+	}
+
+	// Build reboot command
+	cmd := utils.BuildZTERemoveCommand(slot, port, *payload.Onu)
+
+	// Execute command via telnet
+	resp, err := utils.RunTelnetCommand(cmd)
+	if err != nil {
+		log.Error().Err(err).Msg("Remove command failed via Telnet")
+		utils.ErrorInternalServerError(w, fmt.Errorf("failed to remove ONU"))
+		return
+	}
+
+	// Return success response
+	response := utils.WebResponse{
+		Code:   http.StatusOK,
+		Status: "OK",
+		Data: map[string]interface{}{
+			"status":         "remove_sent",
+			"olt_index":      payload.OLTIndex,
+			"onu":            *payload.Onu,
+			"command_output": resp,
+		},
+	}
+
+	utils.SendJSONResponse(w, http.StatusOK, response)
+}

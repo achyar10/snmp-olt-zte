@@ -123,3 +123,14 @@ reboot`,
 		slot, port, onu,
 	)
 }
+
+func BuildZTERemoveCommand(slot, port, onu int) string {
+	return fmt.Sprintf(
+		`conf t
+interface gpon-olt_1/%d/%d
+no onu %d
+end
+wr`,
+		slot, port, onu,
+	)
+}
