@@ -5,6 +5,7 @@ services:
       dockerfile: Dockerfile
     image: snmp-olt-zte:latest
     container_name: snmp-olt-zte
+    restart: always
     environment:
       - REDIS_HOST=127.0.0.1
       - REDIS_PORT=6379
