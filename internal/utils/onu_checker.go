@@ -82,25 +82,24 @@ func BuildZTERegisterCommand(slot, port int, region, serialNumber, code string, 
 	return fmt.Sprintf(
 		`con t
 interface gpon-olt_1/%d/%d
-onu %d type ZTE sn %s
+onu %d type ALL sn %s
 exit
 interface gpon-onu_1/%d/%d:%d
 name %s
 description zone %s
-tcont 3 profile 1G
-gemport 1 tcont 3
+tcont 3 profile 10m
+gemport 1 tcont 1
+gemport 1 traffic-limit upstream 100m downstream 100m
 service-port 1 vport 1 user-vlan %d vlan %d
 service-port 2 vport 1 user-vlan 100 vlan 100
 exit
 
 pon-onu-mng gpon-onu_1/%d/%d:%d
 service 1 gemport 1 vlan %d
-service TR069 gemport 1 vlan 100
-wan-ip 1 mode pppoe username %s password 101094 vlan-profile %d host 1
-wan-ip 2 mode dhcp vlan-profile 100 host 2
-tr069-mgmt 1 acs http://10.0.0.3:7547
+service 2 gemport 1 vlan 100
 security-mgmt 212 state enable mode forward protocol web
-wan 1 ethuni 1 ssid 1 service internet host 1
+wan-ip 1 mode pppoe username %s password aba vlan-profile netmedia143 host 1
+wan 1 service internet host 1
 end
 wr`,
 		slot, port,
@@ -110,7 +109,7 @@ wr`,
 		vlanID, vlanID,
 		slot, port, onu,
 		vlanID,
-		code, vlanID,
+		code,
 	)
 }
 
